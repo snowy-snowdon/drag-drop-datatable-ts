@@ -1,7 +1,21 @@
-import React from "react";
+import React, { MutableRefObject, ReactNode } from "react";
 import styled from "styled-components";
-import { useTable, useAbsoluteLayout, useColumnOrder } from "react-table";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import {
+  useTable,
+  useAbsoluteLayout,
+  useColumnOrder,
+  HeaderGroup,
+  Cell,
+  Row,
+  ColumnInstance,
+  TableToggleHideAllColumnProps
+} from "react-table";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DragUpdate
+} from "react-beautiful-dnd";
 import { makeData } from "./makeData";
 
 const Styles = styled.div`
@@ -81,7 +95,19 @@ function Table({ columns, data }) {
     flatColumns,
     setColumnOrder,
     state,
-    ...rest
+    getToggleHideAllColumnsProps,
+    allColumns
+  }: {
+    getTableProps: any;
+    getTableBodyProps: any;
+    headerGroups: HeaderGroup<object>[];
+    rows: Row<object>;
+    prepareRow: (row: Row<object>) => void;
+    flatColumns: any;
+    setColumnOrder: any;
+    state: any;
+    getToggleHideAllColumnsProps: TableToggleHideAllColumnProps;
+    allColumns: Array<ColumnInstance<object>>;
   } = useTable(
     {
       columns,
@@ -92,10 +118,15 @@ function Table({ columns, data }) {
     useAbsoluteLayout
   );
   const currentColOrder = React.useRef();
-  const IndeterminateCheckbox = React.forwardRef(
-    ({ indeterminate, ...rest }, ref) => {
+  const IndeterminateCheckbox: React.ForwardRefExoticComponent<
+    {
+      indeterminate: ReactNode;
+    } & React.RefAttributes<unknown>
+  > = React.forwardRef(
+    ({ indeterminate, ...rest }: { indeterminate: ReactNode }, ref) => {
       const defaultRef = React.useRef();
-      const resolvedRef = ref || currentColOrder || defaultRef;
+      const resolvedRef: MutableRefObject<ReactNode> =
+        ref || currentColOrder || defaultRef;
 
       React.useEffect(() => {
         resolvedRef.current.indeterminate = indeterminate;
@@ -110,10 +141,10 @@ function Table({ columns, data }) {
     <>
       <div>
         <div>
-          <IndeterminateCheckbox {...rest.getToggleHideAllColumnsProps()} />{" "}
-          Toggle All
+          <IndeterminateCheckbox {...getToggleHideAllColumnsProps()} /> Toggle
+          All
         </div>
-        {rest.allColumns.map((column) => (
+        {allColumns.map((column) => (
           <div key={column.id}>
             <label>
               <input type="checkbox" {...column.getToggleHiddenProps()} />{" "}
@@ -125,15 +156,17 @@ function Table({ columns, data }) {
       </div>
       <div {...getTableProps()} className="table">
         <div>
-          {headerGroups.map((headerGroup) => (
+          {headerGroups.map((headerGroup: HeaderGroup<any>) => (
             <DragDropContext
               onDragStart={() => {
-                currentColOrder.current = rest.allColumns?.map((o) => o.id);
+                currentColOrder.current = allColumns?.map(
+                  (o) => o.id
+                ) as string[];
               }}
-              onDragUpdate={(dragUpdateObj, b) => {
+              onDragUpdate={(dragUpdateObj: DragUpdate, b) => {
                 // console.log("onDragUpdate", dragUpdateObj, b);
 
-                const colOrder = [...rest.allColumns?.map((o) => o.id)];
+                const colOrder = [...allColumns?.map((o) => o.id)];
                 const sIndex = dragUpdateObj.source.index;
                 const dIndex =
                   dragUpdateObj.destination && dragUpdateObj.destination.index;
@@ -152,11 +185,7 @@ function Table({ columns, data }) {
                 }
               }}
             >
-              <Droppable
-                droppableId="droppable"
-                direction="horizontal"
-                beautiful
-              >
+              <Droppable droppableId="droppable" direction="horizontal">
                 {(droppableProvided, snapshot) => (
                   <div
                     {...headerGroup.getHeaderGroupProps()}
@@ -215,10 +244,10 @@ function Table({ columns, data }) {
 
         <div className="rows" {...getTableBodyProps()}>
           {rows.map(
-            (row, i) =>
+            (row: Row<object>) =>
               prepareRow(row) || (
                 <div {...row.getRowProps()} className="row body">
-                  {row.cells.map((cell) => {
+                  {row.cells.map((cell: Cell<object, any>) => {
                     return (
                       <div {...cell.getCellProps()} className="cell">
                         {cell.render("Cell")}
